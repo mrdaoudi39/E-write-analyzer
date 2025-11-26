@@ -1,0 +1,51 @@
+import spacy
+import textstat
+from collections import Counter
+
+# Load a medium-sized English model from spaCy
+# You would run: python -m spacy download en_core_web_md
+nlp = spacy.load("en_core_web_md")
+
+def analyze_basic_features(text: str):
+    """
+    Performs basic linguistic analysis on a text string.
+    """
+    doc = nlp(text)
+    
+    # 1. Lexical Diversity (Type-Token Ratio)
+    tokens = [token.text.lower() for token in doc if token.is_alpha]
+    ttr = len(set(tokens)) / len(tokens) if tokens else 0
+    
+    # 2. Lexical Density (Content words / Total words)
+    content_pos = {'NOUN', 'VERB', 'ADJ', 'ADV'}
+    content_words = [token for token in doc if token.pos_ in content_pos]
+    lexical_density = len(content_words) / len(list(doc)) if doc else 0
+    
+    # 3. Readability Scores
+    flesch_score = textstat.flesch_reading_ease(text)
+    
+    # 4. Passive Voice Detection (Simplified)
+    passive_voice_count = 0
+    for token in doc:
+        # A simple heuristic: check for a verb with a passive dependency tag
+        if token.dep_ == 'nsubjpass':
+            passive_voice_count += 1
+            
+    passive_ratio = passive_voice_count / len([sent for sent in doc.sents]) if list(doc.sents) else 0
+
+    return {
+        "ttr": ttr,
+        "lexical_density": lexical_density,
+        "flesch_reading_ease": flesch_score,
+        "passive_voice_ratio": passive_ratio
+    }
+
+# --- Example Usage ---
+student_text = """
+The tensile strength of the new composite material was tested. The sample was prepared according to ASTM D3039. 
+The results, which are shown in Figure 3, indicate a significant improvement. This suggests that our new 
+manufacturing process is effective. We analyzed the data and found it to be conclusive.
+"""
+
+analysis_results = analyze_basic_features(student_text)
+print(analysis_results)
